@@ -69,13 +69,6 @@ export function Hero() {
           </div>
         </div>
       </div>
-
-      <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-steel-200/60 sm:flex">
-        <span className="text-[11px] font-medium tracking-[0.3em] uppercase">
-          Scroll
-        </span>
-        <span className="h-10 w-px animate-pulse bg-steel-200/50" />
-      </div>
     </section>
   );
 }
