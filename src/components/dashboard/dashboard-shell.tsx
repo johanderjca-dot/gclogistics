@@ -1,18 +1,16 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { titleForPath } from "@/lib/dashboard-nav";
 
-export function DashboardShell({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+export function DashboardShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const title = titleForPath(pathname);
 
   return (
     <div className="min-h-screen bg-steel-100 p-3 sm:p-4 lg:p-6">

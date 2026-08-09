@@ -2,59 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Boxes,
-  ClipboardList,
-  Truck,
-  RotateCcw,
-  CreditCard,
-  BarChart3,
-  Settings,
-  LogOut,
-} from "lucide-react";
-
-const NAV_GROUPS = [
-  {
-    label: "Principal",
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Inventario", href: "/dashboard/inventario", icon: Boxes },
-      { label: "Pedidos", href: "/dashboard/pedidos", icon: ClipboardList },
-      {
-        label: "Órdenes de Retiro",
-        href: "/dashboard/retiros",
-        icon: Truck,
-      },
-    ],
-  },
-  {
-    label: "Gestión",
-    items: [
-      {
-        label: "Devoluciones",
-        href: "/dashboard/devoluciones",
-        icon: RotateCcw,
-      },
-      {
-        label: "Facturación",
-        href: "/dashboard/facturacion",
-        icon: CreditCard,
-      },
-      { label: "Reportes", href: "/dashboard/reportes", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Cuenta",
-    items: [
-      {
-        label: "Configuración",
-        href: "/dashboard/configuracion",
-        icon: Settings,
-      },
-    ],
-  },
-];
+import { LogOut } from "lucide-react";
+import { NAV_GROUPS } from "@/lib/dashboard-nav";
 
 function Mark() {
   return (
