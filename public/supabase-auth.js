@@ -55,14 +55,14 @@
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   window.gcUsersPageHTML = () => `<div class="page-heading"><div><div class="eyebrow">PANEL INTERNO</div><h1>Usuarios</h1><p class="subtitle">Administra el acceso y tu perfil de GC Logis.</p></div></div>
     <section class="panel" style="margin-bottom:16px"><div class="panel-head"><div><h2 class="panel-title">Mi perfil</h2><div class="panel-sub">Actualiza tu nombre y foto de perfil.</div></div></div><div class="user-row"><span class="avatar" id="profileAvatar">GC</span><div><b id="profileName">Cargando perfil…</b><div class="panel-sub" id="profileEmail"></div><button class="outline-btn" id="chooseAvatar" type="button" style="margin-top:8px">Cambiar foto</button></div></div><form id="profileForm" style="max-width:440px;margin-top:16px"><label class="field"><span>Nombre</span><input name="full_name" maxlength="120" required></label><button class="outline-btn" type="submit">Guardar perfil</button><span id="profileStatus" class="success-note" style="margin-left:10px"></span></form></section>
-    <section class="panel section-panel"><div class="section-toolbar"><div><h2 class="panel-title">Equipo</h2><div class="panel-sub">Las invitaciones se envían por correo electrónico.</div></div></div><form id="inviteForm" class="user-actions" style="flex-wrap:wrap"><input class="search" name="full_name" placeholder="Nombre" aria-label="Nombre del usuario"><input class="search" name="email" type="email" placeholder="correo@empresa.com" aria-label="Correo del usuario" required><button class="primary-btn" type="submit">Invitar usuario</button></form><div id="inviteStatus" class="panel-sub" style="margin:10px 0"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Desde</th></tr></thead><tbody id="usersBody"><tr><td class="table-empty" colspan="4">Cargando usuarios…</td></tr></tbody></table></div><div id="usersAdminNote" class="notice" style="display:none;margin-top:16px">Tu cuenta aún no tiene permisos de administrador. Un administrador debe asignarte ese rol en Supabase.</div></section>
+    <section class="panel section-panel"><div class="section-toolbar"><div><h2 class="panel-title">Equipo</h2><div class="panel-sub">Crea acceso directo para cada integrante del equipo.</div><div class="panel-sub">Clave temporal: <b>123456</b>. Deben cambiarla al entrar.</div></div></div><form id="createUserForm" class="user-actions" style="flex-wrap:wrap"><input class="search" name="full_name" placeholder="Nombre" aria-label="Nombre del usuario"><input class="search" name="email" type="email" placeholder="correo@empresa.com" aria-label="Correo del usuario" required><button class="primary-btn" type="submit">Crear usuario</button></form><div id="createUserStatus" class="panel-sub" style="margin:10px 0"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Desde</th></tr></thead><tbody id="usersBody"><tr><td class="table-empty" colspan="4">Cargando usuarios…</td></tr></tbody></table></div><div id="usersAdminNote" class="notice" style="display:none;margin-top:16px">Tu cuenta aún no tiene permisos de administrador. Un administrador debe asignarte ese rol en Supabase.</div></section>
     <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="outline-btn" id="signOutButton">Cerrar sesión</button></div>`;
 
   async function loadUsers() {
     const body = document.getElementById('usersBody');
     if (!body) return;
     const isAdmin = currentProfile?.role === 'admin';
-    document.getElementById('inviteForm').style.display = isAdmin ? 'flex' : 'none';
+    document.getElementById('createUserForm').style.display = isAdmin ? 'flex' : 'none';
     document.getElementById('usersAdminNote').style.display = isAdmin ? 'none' : 'flex';
     const { data, error } = await client.from('profiles').select('id,email,full_name,role,created_at').order('created_at', { ascending: false });
     if (error) { body.innerHTML = `<tr><td colspan="4" class="table-empty">No se pudieron cargar perfiles: ${esc(error.message)}</td></tr>`; return; }
@@ -71,13 +71,18 @@
 
   async function signedIn(user) {
     currentUser = user;
-    authGate.style.display = 'none';
     try { await loadProfile(); }
     catch (error) {
       authGate.style.display = 'grid';
       unavailable(`Falta preparar los perfiles en Supabase: ${error.message}`);
       return;
     }
+    if (user.app_metadata?.must_change_password) {
+      authGate.style.display = 'grid';
+      authGate.innerHTML = `<form class="auth-card auth-password-card" id="forcePasswordForm" aria-label="Cambiar contraseña"><section class="auth-form-pane"><h1>Cambia tu contraseña</h1><p>Es necesario crear una contraseña nueva para entrar al panel.</p><label class="field"><span>Nueva contraseña</span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label class="field"><span>Confirma la contraseña</span><input name="confirm_password" type="password" autocomplete="new-password" minlength="8" required></label><button class="primary-btn" type="submit" style="width:100%;justify-content:center">Guardar contraseña</button><div class="auth-error" id="passwordChangeError" role="status"></div></section></form>`;
+      return;
+    }
+    authGate.style.display = 'none';
     if (document.getElementById('usersBody')) loadUsers();
   }
 
@@ -102,13 +107,30 @@
   });
 
   document.addEventListener('submit', async (event) => {
-    if (event.target.id === 'inviteForm') {
+    if (event.target.id === 'forcePasswordForm') {
       event.preventDefault();
-      const status = document.getElementById('inviteStatus');
       const fields = new FormData(event.target);
-      status.textContent = 'Enviando invitación…';
+      const password = fields.get('password');
+      const status = document.getElementById('passwordChangeError');
+      if (typeof password !== 'string' || password.length < 8) { status.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+      if (password !== fields.get('confirm_password')) { status.textContent = 'Las contraseñas no coinciden.'; return; }
+      const button = event.target.querySelector('button[type="submit"]');
+      button.disabled = true;
+      status.textContent = 'Guardando contraseña…';
+      const { error } = await client.functions.invoke('complete-password-change', { body: { password } });
+      if (error) { button.disabled = false; status.textContent = `No se pudo actualizar: ${error.message}`; return; }
+      status.textContent = 'Contraseña actualizada. Vuelve a iniciar sesión con tu nueva clave.';
+      await client.auth.signOut();
+      setTimeout(() => window.location.reload(), 1300);
+      return;
+    }
+    if (event.target.id === 'createUserForm') {
+      event.preventDefault();
+      const status = document.getElementById('createUserStatus');
+      const fields = new FormData(event.target);
+      status.textContent = 'Creando usuario…';
       const { error } = await client.functions.invoke('admin-create-user', { body: { email: fields.get('email'), full_name: fields.get('full_name') } });
-      status.textContent = error ? `No se pudo enviar: ${error.message}` : 'Invitación enviada. La persona recibirá un correo para activar su cuenta.';
+      status.textContent = error ? `No se pudo enviar: ${error.message}` : 'Usuario creado. Clave temporal: 123456. Deberá cambiarla al entrar.';
       status.className = error ? 'auth-error' : 'success-note';
       if (!error) { event.target.reset(); loadUsers(); }
     }
