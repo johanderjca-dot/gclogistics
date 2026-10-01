@@ -98,7 +98,7 @@
     if (target) setTimeout(loadUsers, 0);
     if (event.target.closest('#chooseAvatar')) document.getElementById('avatarFileGlobal')?.click();
     if (event.target.closest('#navAvatar')) document.getElementById('avatarFileGlobal')?.click();
-    if (event.target.closest('#signOutButton')) await client.auth.signOut();
+    if (event.target.closest('#signOutButton, #signOutHeader')) await client.auth.signOut();
   });
 
   document.addEventListener('submit', async (event) => {
