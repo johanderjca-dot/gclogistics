@@ -129,7 +129,7 @@
       const status = document.getElementById('createUserStatus');
       const fields = new FormData(event.target);
       status.textContent = 'Creando usuario…';
-      const { error } = await client.functions.invoke('admin-create-user', { body: { email: fields.get('email'), full_name: fields.get('full_name') } });
+      const { error } = await client.functions.invoke('admin-create-user-direct', { body: { email: fields.get('email'), full_name: fields.get('full_name') } });
       status.textContent = error ? `No se pudo enviar: ${error.message}` : 'Usuario creado. Clave temporal: 123456. Deberá cambiarla al entrar.';
       status.className = error ? 'auth-error' : 'success-note';
       if (!error) { event.target.reset(); loadUsers(); }
