@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 430" role="img" aria-labelledby="title desc">
+<title id="title">Carga en movimiento</title><desc id="desc">Ilustración de un camión de carga frente a un centro logístico con cajas listas para despacho.</desc>
+<defs>
+  <linearGradient id="cargo" x1="0" x2="1"><stop stop-color="#f5f8f5"/><stop offset="1" stop-color="#d9e5e1"/></linearGradient>
+  <linearGradient id="box" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d3e2dc"/><stop offset="1" stop-color="#a9c3bb"/></linearGradient>
+</defs>
+<ellipse cx="324" cy="380" rx="270" ry="24" fill="#061f30" opacity=".45"/>
+<path d="M42 93a20 20 0 0 1 20-20h516a20 20 0 0 1 20 20v238H42z" fill="#123b52"/>
+<path d="M76 116h287v191H76z" fill="#0b2d41" stroke="#31586b" stroke-width="5"/>
+<path d="M94 136h250v153H94z" fill="#153e54"/>
+<path d="M126 136v153m56-153v153m56-153v153m56-153v153" stroke="#527183" stroke-width="4" opacity=".65"/>
+<path d="M388 114h176v194H388z" fill="#173f54"/>
+<path d="M403 129h146v165H403z" fill="#102f43" stroke="#496b7d" stroke-width="4"/>
+<path d="M403 172h146m-146 42h146m-146 42h146" stroke="#496b7d" stroke-width="3" opacity=".75"/>
+<path d="M432 150h25v14h-25zm38 0h25v14h-25zm38 0h25v14h-25z" fill="#b8d92d" opacity=".88"/>
+<path d="M64 331h532" stroke="#71909c" stroke-width="4" stroke-linecap="round"/>
+<!-- cargo boxes -->
+<g stroke="#8ca99e" stroke-width="3">
+  <path d="M467 272h54v48h-54z" fill="url(#box)"/><path d="M467 288h54m-27-16v48" fill="none"/>
+  <path d="M512 238h55v45h-55z" fill="#e4ece8"/><path d="M512 253h55m-27-15v45" fill="none"/>
+  <path d="M540 282h46v39h-46z" fill="#b8d92d"/><path d="M540 295h46m-23-13v39" fill="none"/>
+</g>
+<!-- truck chassis and cargo body -->
+<path d="M66 260a15 15 0 0 1 15-15h277v100H66z" fill="url(#cargo)"/>
+<path d="M82 261h261v68H82z" fill="#e9efeb"/>
+<path d="M103 261v68m40-68v68m40-68v68m40-68v68m40-68v68m40-68v68" stroke="#c3d3cd" stroke-width="4"/>
+<path d="M358 282h83l38 42v31H358z" fill="#b8d92d"/>
+<path d="M377 292h53l23 27h-76z" fill="#163f55"/>
+<path d="M459 321h20v34h-20z" fill="#94b51c"/>
+<path d="M358 353h121v13H358z" fill="#12364a"/>
+<circle cx="142" cy="360" r="29" fill="#092d45"/><circle cx="142" cy="360" r="13" fill="#dce6e2"/>
+<circle cx="414" cy="360" r="29" fill="#092d45"/><circle cx="414" cy="360" r="13" fill="#dce6e2"/>
+<!-- motion lines -->
+<path d="M82 217h105m-136 17h70" stroke="#b8d92d" stroke-width="6" stroke-linecap="round" opacity=".9"/>
+<circle cx="245" cy="94" r="9" fill="#b8d92d"/><circle cx="278" cy="94" r="5" fill="#e7f0ec" opacity=".8"/>
+</svg>
