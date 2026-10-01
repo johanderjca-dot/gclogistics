@@ -27,8 +27,14 @@ Deno.serve(async (req) => {
     if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return Response.json({ error: 'Enter a valid email address.' }, { status: 400, headers: cors });
     }
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email.trim(), {
-      data: { full_name: typeof full_name === 'string' ? full_name.trim().slice(0, 120) : '' },
+    const normalizedEmail = email.trim();
+    const safeName = typeof full_name === 'string' ? full_name.trim().slice(0, 120) : '';
+    const { data, error } = await admin.auth.admin.createUser({
+      email: normalizedEmail,
+      password: '123456',
+      email_confirm: true,
+      user_metadata: { full_name: safeName },
+      app_metadata: { must_change_password: true },
     });
     if (error) return Response.json({ error: error.message }, { status: 400, headers: cors });
     return Response.json({ id: data.user.id, email: data.user.email }, { status: 200, headers: cors });
