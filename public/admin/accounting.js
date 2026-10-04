@@ -3,7 +3,7 @@
   const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date = (v) => v ? new Date(v+'T12:00:00').toLocaleDateString('es-DO') : '—';
   const views = {overview:'Balance general',transactions:'Gastos y facturas',balance:'Balance general',journal:'Libro diario',accounts:'Plan de cuentas',auxiliary:'Auxiliar de cuentas por pagar'};
-  let records={accounts:[],investors:[],expenses:[],entries:[],lines:[]}, started=false, loading=false, current='overview';
+  let records={accounts:[],investors:[],expenses:[],entries:[],lines:[]}, started=false, loadPromise=null, current='overview';
   const client=()=>window.gcSupabase;
   function amountByAccount(){
     const sums={};
@@ -83,6 +83,11 @@
   }
   function setView(view){
     current=view;
+    document.querySelectorAll('#sideNav [data-page]').forEach(b=>{
+      const active=b.dataset.page==='overview';
+      b.classList.toggle('active',active);
+      b.setAttribute('aria-current',active?'page':'false');
+    });
     const primary=view==='transactions'?'transactions':view==='auxiliary'?'payables':'overview';
     document.querySelectorAll('#primaryTabs .primary-tab[data-page]').forEach(b=>{const active=b.dataset.page===primary;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))});
     const activePrimary=document.querySelector('#primaryTabs .primary-tab.active'),indicator=document.getElementById('tabIndicator');
@@ -92,7 +97,7 @@
     const items=[['overview','Balance general'],['transactions','Gastos y facturas'],['journal','Libro diario'],['accounts','Plan de cuentas'],['auxiliary','Libro auxiliar']];
     const nav='<nav class="accounting-subnav" aria-label="Secciones contables">'+items.map(([key,label])=>'<button type="button" class="'+(view===key?'active':'')+'" data-accounting-view="'+key+'">'+label+'</button>').join('')+'</nav>';
     content.innerHTML=nav+heading+pageContent(view);document.getElementById('crumbPage').textContent=views[view]||views.auxiliary;
-    content.querySelectorAll('#accountingSubnav [data-accounting-view],.accounting-subnav [data-accounting-view]').forEach(b=>b.addEventListener('click',()=>loadData().then(()=>setView(b.dataset.accountingView))));
+    content.querySelectorAll('#accountingSubnav [data-accounting-view],.accounting-subnav [data-accounting-view]').forEach(b=>b.addEventListener('click',()=>{const nextView=b.dataset.accountingView;loadData().then(ok=>{if(ok)setView(nextView)})}));
     if(view==='transactions'&&document.querySelector('[data-accounting-new]'))document.querySelector('[data-accounting-new]').addEventListener('click',()=>{document.getElementById('pageContent').innerHTML=nav+heading+formHtml();document.getElementById('accountingExpenseForm').addEventListener('submit',saveExpense)});
     document.querySelectorAll('[data-accounting-open]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.accountingOpen)));
   }
@@ -104,26 +109,30 @@
     if(error){status.textContent='No se guardó: '+error.message;button.disabled=false;return}
     await loadData();setView('transactions');
   }
-  async function loadData(){
-    if(!client()||loading)return;loading=true;
-    const results=await Promise.all([
-      client().from('accounting_accounts').select('*').order('code'),
-      client().from('accounting_investors').select('*').order('account_code'),
-      client().from('accounting_expenses').select('*').order('expense_date',{ascending:false}),
-      client().from('accounting_journal_entries').select('*').order('entry_date',{ascending:false}),
-      client().from('accounting_journal_lines').select('*').order('line_no')
-    ]);
-    loading=false;const bad=results.find(r=>r.error);
-    if(bad){showError('No se pudieron cargar los libros contables. Verifica la configuración de Supabase. '+bad.error.message);return}
-    records={accounts:results[0].data||[],investors:results[1].data||[],expenses:results[2].data||[],entries:results[3].data||[],lines:results[4].data||[]};
-    setView(current);
+  function loadData(){
+    if(!client())return Promise.resolve(false);
+    if(loadPromise)return loadPromise;
+    loadPromise=(async()=>{
+      const results=await Promise.all([
+        client().from('accounting_accounts').select('*').order('code'),
+        client().from('accounting_investors').select('*').order('account_code'),
+        client().from('accounting_expenses').select('*').order('expense_date',{ascending:false}),
+        client().from('accounting_journal_entries').select('*').order('entry_date',{ascending:false}),
+        client().from('accounting_journal_lines').select('*').order('line_no')
+      ]);
+      const bad=results.find(r=>r.error);
+      if(bad){showError('No se pudieron cargar los libros contables. Verifica la configuración de Supabase. '+bad.error.message);return false}
+      records={accounts:results[0].data||[],investors:results[1].data||[],expenses:results[2].data||[],entries:results[3].data||[],lines:results[4].data||[]};
+      return true;
+    })().catch(error=>{showError('No se pudieron cargar los libros contables. '+(error?.message||error));return false}).finally(()=>{loadPromise=null});
+    return loadPromise;
   }
   function showError(msg){const content=document.getElementById('pageContent');if(content)content.innerHTML='<div class="page-heading"><div><div class="eyebrow">CONTABILIDAD</div><h1>Libros contables</h1></div></div><section class="accounting-panel"><div class="accounting-error">'+esc(msg)+'</div></section>'}
   function mount(){
     if(started||!client())return;started=true;
     const bar=document.getElementById('primaryTabs');
     if(!bar)return;
-    document.querySelectorAll('#primaryTabs [data-page],#sideNav [data-page="overview"]').forEach(b=>b.addEventListener('click',e=>{const p=b.dataset.page;if(!['overview','transactions','payables'].includes(p))return;e.preventDefault();e.stopPropagation();const v=p==='overview'?'overview':p==='transactions'?'transactions':'auxiliary';loadData().then(()=>setView(v))}));
+    document.querySelectorAll('#primaryTabs [data-page],#sideNav [data-page="overview"]').forEach(b=>b.addEventListener('click',e=>{const p=b.dataset.page;if(!['overview','transactions','payables'].includes(p))return;e.preventDefault();e.stopPropagation();const v=p==='overview'?'overview':p==='transactions'?'transactions':'auxiliary';loadData().then(ok=>{if(ok)setView(v)})}));
     bar.insertAdjacentHTML('afterend','<style>'+"\n.accounting-subnav{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 22px}.accounting-subnav button{border:1px solid var(--line);border-radius:8px;padding:8px 11px;background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap}.accounting-subnav button:hover{color:var(--text);border-color:var(--blue)}.accounting-subnav button.active{background:var(--navy);border-color:var(--navy);color:#fff}.accounting-view{display:grid;gap:16px}.accounting-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.accounting-card,.accounting-panel{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}.accounting-card{padding:16px 18px}.accounting-card small,.accounting-muted{color:var(--muted)}.accounting-card small{font-size:12px}.accounting-card strong{display:block;font-size:22px;margin-top:10px}.accounting-panel{padding:18px}.accounting-panel h2{font-size:15px;margin:0 0 6px}.accounting-panel p{color:var(--muted);font-size:12px;margin:0 0 14px}.accounting-table{width:100%;border-collapse:collapse;min-width:720px}.accounting-table th{font-size:10px;text-transform:uppercase;color:var(--muted);text-align:left;letter-spacing:.06em;padding:11px 9px;border-bottom:1px solid var(--line)}.accounting-table td{font-size:12px;padding:11px 9px;border-bottom:1px solid var(--line);vertical-align:top}.accounting-table tfoot th{font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);padding:12px 9px}.accounting-right{text-align:right;white-space:nowrap}.accounting-tabs{display:flex;gap:6px;align-items:center}.accounting-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}.accounting-toolbar h2{margin:0}.accounting-status{color:var(--muted);padding:14px 0;font-size:13px}.accounting-error{color:var(--red);background:color-mix(in srgb,var(--red) 8%,var(--surface));padding:12px;border-radius:8px;margin:12px 0}.accounting-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.accounting-form label{display:grid;gap:5px;font-size:12px;font-weight:600}.accounting-form input,.accounting-form select,.accounting-form textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text)}.accounting-form .wide{grid-column:1/-1}.accounting-actions{display:flex;gap:8px;justify-content:flex-end;grid-column:1/-1}.accounting-notice{font-size:12px;color:var(--muted);padding:12px 0}.accounting-badge{display:inline-flex;padding:3px 8px;border-radius:20px;background:var(--surface-2);color:var(--muted);font-size:10px}.accounting-indent{padding-left:24px!important}@media(max-width:900px){.accounting-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.accounting-cards{gap:9px}.accounting-card{padding:13px}.accounting-card strong{font-size:18px}.accounting-toolbar{align-items:flex-start;flex-direction:column}.accounting-form{grid-template-columns:1fr}.accounting-form .wide{grid-column:auto}.accounting-actions{grid-column:auto}}\n"+'</style>');
     client().auth.onAuthStateChange((_event,session)=>{if(session?.user)loadData()});
     client().auth.getSession().then(({data})=>{if(data?.session?.user)loadData()});
