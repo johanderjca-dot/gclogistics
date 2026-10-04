@@ -138,17 +138,6 @@
     client().auth.getSession().then(({data})=>{if(data?.session?.user)loadData().then(ok=>{if(ok&&document.querySelector('.module-nav[data-page="overview"]')?.classList.contains('active'))setView(current)})});
   }
   function handleDocClick(e){const open=e.target.closest('[data-accounting-open]');if(open){setView(open.dataset.accountingOpen);return}}
-  function syncModuleNav(){
-    if(!document.querySelector('.accounting-subnav'))return;
-    const accounting=document.querySelector('.module-nav[data-page="overview"]');
-    const users=document.querySelector('button[data-page="users"]');
-    const settings=document.querySelector('button[data-page="settings"]');
-    if(accounting){accounting.classList.add('active');accounting.setAttribute('aria-current','page')}
-    if(users){users.classList.remove('active');users.setAttribute('aria-current','false')}
-    if(settings){settings.classList.remove('active');settings.setAttribute('aria-current','false')}
-  }
-  const navObserver=new MutationObserver(syncModuleNav);
-  navObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',handleDocClick);
   mount();
 })();
