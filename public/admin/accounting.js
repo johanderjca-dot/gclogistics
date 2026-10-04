@@ -83,7 +83,7 @@
   }
   function setView(view){
     current=view;
-    document.querySelectorAll('#sideNav [data-page]').forEach(b=>{
+    document.querySelectorAll('.module-nav[data-page],button[data-page="users"],button[data-page="settings"]').forEach(b=>{
       const active=b.dataset.page==='overview';
       b.classList.toggle('active',active);
       b.setAttribute('aria-current',active?'page':'false');
