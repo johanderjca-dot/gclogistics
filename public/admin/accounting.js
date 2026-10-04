@@ -88,6 +88,7 @@
       b.classList.toggle('active',active);
       b.setAttribute('aria-current',active?'page':'false');
     });
+    const primaryTabs=document.getElementById('primaryTabs');if(primaryTabs)primaryTabs.classList.remove('is-hidden');
     const primary=view==='transactions'?'transactions':view==='auxiliary'?'payables':'overview';
     document.querySelectorAll('#primaryTabs .primary-tab[data-page]').forEach(b=>{const active=b.dataset.page===primary;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))});
     const activePrimary=document.querySelector('#primaryTabs .primary-tab.active'),indicator=document.getElementById('tabIndicator');
