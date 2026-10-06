@@ -156,7 +156,7 @@
       if((N(e.itbis_withheld)>0||N(e.isr_withheld)>0)&&!e.payment_date)miss.push('fecha de pago');
       if(miss.length)issues.push([e.expense_date,e.supplier,e.ncf,N(e.total_amount),miss.join(', ')]);
       const itbis=N(e.itbis_amount),cost=N(e.itbis_to_cost);
-      return [e.supplier_rnc||'',e.supplier_id_type||'',e.goods_services_type||'',e.ncf,e.ncf_modified||'',ym(e.expense_date),dd(e.expense_date),ym(e.payment_date),dd(e.payment_date),N(e.services_amount),N(e.goods_amount),N(e.net_amount),itbis,N(e.itbis_withheld),0,cost,N(itbis-cost),0,e.isr_withholding_type||'',N(e.isr_withheld),0,N(e.isc_amount),N(e.other_taxes),N(e.legal_tip),e.payment_method||''];
+      return [String(e.supplier_rnc||'').replace(/\D/g,''),e.supplier_id_type||'',e.goods_services_type||'',e.ncf,e.ncf_modified||'',ym(e.expense_date),dd(e.expense_date),ym(e.payment_date),dd(e.payment_date),N(e.services_amount),N(e.goods_amount),N(e.net_amount),itbis,N(e.itbis_withheld),0,cost,N(itbis-cost),0,e.isr_withholding_type||'',N(e.isr_withheld),0,N(e.isc_amount),N(e.other_taxes),N(e.legal_tip),e.payment_method||''];
     });
     const sheet=(aoa,widths)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=widths.map(w=>({wch:w}));return ws};
     const wb=XLSX.utils.book_new();

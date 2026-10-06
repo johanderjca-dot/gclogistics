@@ -26,7 +26,12 @@ alter table public.accounting_expenses
   add column if not exists other_taxes numeric(14,2) not null default 0,
   add column if not exists legal_tip numeric(14,2) not null default 0;
 
--- Facturas ya registradas: deducir el tipo de identificación por el largo del RNC/cédula.
+-- Facturas ya registradas: quitar guiones/espacios del RNC (la DGII lo pide solo con dígitos)
+update public.accounting_expenses
+set supplier_rnc = nullif(regexp_replace(supplier_rnc,'\D','','g'),'')
+where supplier_rnc is not null and supplier_rnc ~ '\D';
+
+-- y deducir el tipo de identificación por el largo del RNC/cédula.
 update public.accounting_expenses
 set supplier_id_type = case length(regexp_replace(coalesce(supplier_rnc,''),'\D','','g')) when 9 then '1' when 11 then '2' end
 where supplier_id_type is null and supplier_rnc is not null;
@@ -209,7 +214,7 @@ begin
   if v_services + v_goods = 0 then v_services := v_e.services_amount; v_goods := v_e.goods_amount; end if;
   update public.accounting_expenses set
     supplier_rnc = coalesce(v_rnc, supplier_rnc),
-    supplier_id_type = case length(coalesce(v_rnc, supplier_rnc)) when 9 then '1' when 11 then '2' else supplier_id_type end,
+    supplier_id_type = case length(regexp_replace(coalesce(v_rnc, supplier_rnc,''),'\D','','g')) when 9 then '1' when 11 then '2' else supplier_id_type end,
     goods_services_type = coalesce(nullif(p->>'goods_services_type',''), goods_services_type),
     services_amount = v_services,
     goods_amount = v_goods,
