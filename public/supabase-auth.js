@@ -78,7 +78,7 @@
     }
     if (user.app_metadata?.must_change_password) {
       authGate.style.display = 'grid';
-      authGate.innerHTML = `<form class="auth-card auth-password-card" id="forcePasswordForm" aria-label="Cambiar contraseña"><section class="auth-form-pane"><h1>Cambia tu contraseña</h1><label class="field"><span>Nueva contraseña</span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label class="field"><span>Confirma la contraseña</span><input name="confirm_password" type="password" autocomplete="new-password" minlength="8" required></label><button class="primary-btn" type="submit" style="width:100%;justify-content:center">Guardar contraseña</button><div class="auth-error" id="passwordChangeError" role="status"></div></section></form>`;
+      authGate.innerHTML = `<form class="auth-card auth-password-card" id="forcePasswordForm" aria-label="Cambiar contraseña"><section class="auth-form-pane"><h1>Cambia tu contraseña</h1><label class="field"><span>Nueva contraseña</span><input name="password" type="password" autocomplete="new-password" minlength="10" required></label><label class="field"><span>Confirma la contraseña</span><input name="confirm_password" type="password" autocomplete="new-password" minlength="10" required></label><button class="primary-btn" type="submit" style="width:100%;justify-content:center">Guardar contraseña</button><div class="auth-error" id="passwordChangeError" role="status"></div></section></form>`;
       return;
     }
     authGate.style.display = 'none';
@@ -111,7 +111,7 @@
       const fields = new FormData(event.target);
       const password = fields.get('password');
       const status = document.getElementById('passwordChangeError');
-      if (typeof password !== 'string' || password.length < 8) { status.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+      if (typeof password !== 'string' || password.length < 10) { status.textContent = 'La contraseña debe tener al menos 10 caracteres.'; return; }
       if (password !== fields.get('confirm_password')) { status.textContent = 'Las contraseñas no coinciden.'; return; }
       const button = event.target.querySelector('button[type="submit"]');
       button.disabled = true;
@@ -128,8 +128,8 @@
       const status = document.getElementById('createUserStatus');
       const fields = new FormData(event.target);
       status.textContent = 'Creando usuario…';
-      const { error } = await client.functions.invoke('admin-create-user-direct', { body: { email: fields.get('email'), full_name: fields.get('full_name') } });
-      status.textContent = error ? `No se pudo enviar: ${error.message}` : 'Usuario creado.';
+      const { data: created, error } = await client.functions.invoke('admin-create-user-direct', { body: { email: fields.get('email'), full_name: fields.get('full_name') } });
+      status.textContent = error ? `No se pudo crear: ${error.message}` : (created?.temporary_password ? `Usuario creado. Contraseña temporal: ${created.temporary_password} — compártela por un canal privado; al entrar deberá cambiarla. No se volverá a mostrar.` : 'Usuario creado.');
       status.className = error ? 'auth-error' : 'success-note';
       if (!error) { event.target.reset(); loadUsers(); }
     }

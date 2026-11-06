@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
 
   try {
     const { password } = await req.json();
-    if (typeof password !== 'string' || password.length < 8 || password === '123456') {
-      return Response.json({ error: 'Choose a new password with at least 8 characters.' }, { status: 400, headers: cors });
+    if (typeof password !== 'string' || password.length < 10 || password === '123456') {
+      return Response.json({ error: 'Choose a new password with at least 10 characters.' }, { status: 400, headers: cors });
     }
 
     const admin = createClient(url, serviceRole);

@@ -6,6 +6,13 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// Contraseña temporal aleatoria (14 caracteres, sin caracteres confusos).
+function tempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(14));
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405, headers: cors });
@@ -29,15 +36,16 @@ Deno.serve(async (req) => {
     }
     const normalizedEmail = email.trim();
     const safeName = typeof full_name === 'string' ? full_name.trim().slice(0, 120) : '';
+    const password = tempPassword();
     const { data, error } = await admin.auth.admin.createUser({
       email: normalizedEmail,
-      password: '123456',
+      password,
       email_confirm: true,
       user_metadata: { full_name: safeName },
       app_metadata: { must_change_password: true },
     });
     if (error) return Response.json({ error: error.message }, { status: 400, headers: cors });
-    return Response.json({ id: data.user.id, email: data.user.email }, { status: 200, headers: cors });
+    return Response.json({ id: data.user.id, email: data.user.email, temporary_password: password }, { status: 200, headers: cors });
   } catch {
     return Response.json({ error: 'Invalid request.' }, { status: 400, headers: cors });
   }
