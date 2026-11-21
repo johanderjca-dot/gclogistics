@@ -46,6 +46,11 @@
     .contact a{color:var(--navy);font-weight:700;text-decoration:none}
     footer{margin:48px 0 0;padding:22px 0;background:var(--navy-2);color:#9fb6c7;font-size:13px;text-align:center}
     footer b{color:#fff}
+    .fs-btn{display:none;align-items:center;justify-content:center;gap:10px;width:100%;margin:14px 0 0;padding:14px 18px;border:0;border-radius:10px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 8px 18px rgba(18,57,93,.25)}
+    .fs-btn:active{transform:translateY(1px)}
+    .frame:fullscreen{padding-top:0;border-radius:0;background:#000}
+    .frame:-webkit-full-screen{padding-top:0;border-radius:0;background:#000}
+    @media(max-width:760px){.fs-btn{display:flex}}
     @media(max-width:760px){.cta-box{grid-template-columns:1fr;padding:26px 20px}.bar a.mini{display:none}.hero{padding:26px 0 22px}.frame{border-radius:10px}}
   </style>
 </head>
@@ -66,11 +71,12 @@
 
   <main>
     <section class="deck" aria-label="Presentación">
-      <div class="frame">
+      <div class="frame" id="deckFrame">
         <iframe loading="lazy" title="Propuesta corporativa Premier Pack Renacimiento"
           src="https://www.canva.com/design/DAHaFp80Who/RDbRjfFvB2kz273X0i77tQ/view?embed"
           allowfullscreen allow="fullscreen"></iframe>
       </div>
+      <button type="button" class="fs-btn" id="fsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Ver en pantalla completa</button>
       <p class="hint">Use las flechas de la presentación para avanzar entre las páginas.</p>
     </section>
 
@@ -90,5 +96,22 @@
   </main>
 
   <footer><img src="/assets/premierpack-logo-white.svg" alt="Premier Pack Courier" style="height:40px;width:auto;display:block;margin:0 auto 10px"><b>Premier Pack Renacimiento</b> · Tu aliado logístico</footer>
+  <script>
+    (function(){
+      var btn=document.getElementById('fsBtn'), frame=document.getElementById('deckFrame');
+      var deckUrl='https://www.canva.com/design/DAHaFp80Who/RDbRjfFvB2kz273X0i77tQ/view?embed';
+      btn.addEventListener('click',function(){
+        var req=frame.requestFullscreen||frame.webkitRequestFullscreen;
+        if(req){
+          try{
+            var p=req.call(frame);
+            if(p&&p.then){p.then(function(){try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(function(){})}catch(e){}}).catch(function(){window.open(deckUrl,'_blank','noopener')});}
+            return;
+          }catch(e){}
+        }
+        window.open(deckUrl,'_blank','noopener');
+      });
+    })();
+  </script>
 </body>
 </html>
