@@ -90,7 +90,7 @@
   function filtered() {
     const q = filters.q.trim().toLowerCase();
     return rows.filter((r) => (!filters.status || r.status === filters.status) && (!filters.province || r.province === filters.province) && (!filters.industry || r.industry === filters.industry) &&
-      (!q || [r.company_name, r.industry, r.city, r.province, r.phone, r.whatsapp, r.instagram, r.email, r.notes, r.owner_name].some((v) => String(v || '').toLowerCase().includes(q))));
+      (!q || [r.company_name, r.rnc, r.industry, r.city, r.province, r.phone, r.whatsapp, r.instagram, r.email, r.notes, r.owner_name].some((v) => String(v || '').toLowerCase().includes(q))));
   }
   const digits = (v) => String(v || '').replace(/\D/g, '');
   function waLink(r) { let d = digits(r.whatsapp || r.phone); if (!d) return ''; if (d.length === 10) d = '1' + d; return 'https://wa.me/' + d; }
@@ -107,7 +107,7 @@
     const body = list.length ? list.map((r) => {
       const links = [waLink(r) && '<a href="' + esc(waLink(r)) + '" target="_blank" rel="noopener">WhatsApp</a>', r.phone && '<a href="tel:' + esc(digits(r.phone)) + '">' + esc(r.phone) + '</a>', igLink(r.instagram) && '<a href="' + esc(igLink(r.instagram)) + '" target="_blank" rel="noopener">Instagram</a>', r.email && '<a href="mailto:' + esc(r.email) + '">Correo</a>', webLink(r.website) && '<a href="' + esc(webLink(r.website)) + '" target="_blank" rel="noopener">Web</a>'].filter(Boolean).join('');
       const follow = r.next_follow_up ? '<span class="' + (r.next_follow_up <= due && !['cliente', 'descartado'].includes(r.status) ? 'pr-due' : '') + '">' + fmtDate(r.next_follow_up) + '</span>' : '—';
-      return '<tr><td><b>' + esc(r.company_name) + '</b><small>' + esc(r.industry || '') + '</small></td>' +
+      return '<tr><td><b>' + esc(r.company_name) + '</b><small>' + esc(r.industry || '') + (r.rnc ? ' · RNC ' + esc(r.rnc) : '') + '</small></td>' +
         '<td>' + esc(r.city || '—') + '<small>' + esc(r.province || '') + '</small></td>' +
         '<td class="pr-links">' + (links || '<span style="color:var(--muted)">—</span>') + '</td>' +
         '<td><select class="pr-status" data-s="' + esc(r.status) + '" data-status="' + esc(r.id) + '" aria-label="Estado">' + opts(STATUSES, r.status) + '</select></td>' +
@@ -144,6 +144,8 @@
     const v = (k) => esc(r ? r[k] || '' : '');
     const html = '<section class="pr-panel"><h2 class="panel-title" style="margin-bottom:14px">' + (r ? 'Editar prospecto' : 'Nuevo prospecto') + '</h2><form id="prForm" class="pr-form">' +
       '<label class="wide">Empresa *<input name="company_name" required value="' + v('company_name') + '"></label>' +
+      '<label>RNC<input name="rnc" inputmode="numeric" value="' + v('rnc') + '" placeholder="9 u 11 dígitos"></label>' +
+      '<label>Estado RNC (DGII)<input name="rnc_status" value="' + v('rnc_status') + '" placeholder="ACTIVO"></label>' +
       '<label>Rubro<input name="industry" list="prIndustries" value="' + v('industry') + '" placeholder="Ej. Repuestos, cosméticos…"></label>' +
       '<label>Provincia<select name="province">' + opts(PROVINCES, r?.province, '—') + '</select></label>' +
       '<label>Ciudad / sector<input name="city" value="' + v('city') + '"></label>' +
@@ -176,15 +178,16 @@
       ev.preventDefault();
       const msg = c.querySelector('#prMsg'); msg.textContent = 'Guardando…';
       const o = {}; new FormData(ev.currentTarget).forEach((val, k) => { const s = String(val).trim(); o[k] = s === '' ? null : s; });
+      if (o.rnc) o.rnc = o.rnc.replace(/\D/g, '') || null;
       const q = r ? client().from('prospects').update(o).eq('id', r.id) : client().from('prospects').insert(o);
       const { data, error } = await q.select().maybeSingle();
-      if (error) { msg.textContent = /duplicate|unique/i.test(error.message) ? 'Ya existe un prospecto con ese nombre en esa ciudad.' : 'No se guardó: ' + error.message; return; }
+      if (error) { msg.textContent = /duplicate|unique/i.test(error.message) ? 'Ya existe un prospecto con ese nombre en esa ciudad o con ese RNC.' : 'No se guardó: ' + error.message; return; }
       rows = r ? rows.map((x) => x.id === r.id ? data : x) : [data].concat(rows); renderList();
     });
   }
 
   // ───────── Importar / exportar CSV
-  const HEADER_MAP = { empresa: 'company_name', nombre: 'company_name', company: 'company_name', company_name: 'company_name', negocio: 'company_name', rubro: 'industry', industria: 'industry', categoria: 'industry', industry: 'industry', provincia: 'province', province: 'province', ciudad: 'city', sector: 'city', city: 'city', telefono: 'phone', phone: 'phone', tel: 'phone', whatsapp: 'whatsapp', instagram: 'instagram', ig: 'instagram', correo: 'email', email: 'email', web: 'website', website: 'website', sitio: 'website', direccion: 'address', address: 'address', fuente: 'source', source: 'source', estado: 'status', status: 'status', plan: 'estimated_plan', estimated_plan: 'estimated_plan', responsable: 'owner_name', owner_name: 'owner_name', notas: 'notes', notes: 'notes', seguimiento: 'next_follow_up', next_follow_up: 'next_follow_up' };
+  const HEADER_MAP = { empresa: 'company_name', nombre: 'company_name', company: 'company_name', company_name: 'company_name', negocio: 'company_name', rnc: 'rnc', cedula: 'rnc', estado_rnc: 'rnc_status', rnc_status: 'rnc_status', rubro: 'industry', industria: 'industry', categoria: 'industry', industry: 'industry', provincia: 'province', province: 'province', ciudad: 'city', sector: 'city', city: 'city', telefono: 'phone', phone: 'phone', tel: 'phone', whatsapp: 'whatsapp', instagram: 'instagram', ig: 'instagram', correo: 'email', email: 'email', web: 'website', website: 'website', sitio: 'website', direccion: 'address', address: 'address', fuente: 'source', source: 'source', estado: 'status', status: 'status', plan: 'estimated_plan', estimated_plan: 'estimated_plan', responsable: 'owner_name', owner_name: 'owner_name', notas: 'notes', notes: 'notes', seguimiento: 'next_follow_up', next_follow_up: 'next_follow_up' };
   const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z_]/g, '');
   function parseCsv(text) {
     const sep = (text.split('\n')[0].match(/;/g) || []).length > (text.split('\n')[0].match(/,/g) || []).length ? ';' : (text.includes('\t') && !text.split('\n')[0].includes(',') ? '\t' : ',');
@@ -201,7 +204,7 @@
   }
   function showImport() {
     const c = page('<section class="pr-panel"><h2 class="panel-title" style="margin-bottom:10px">Importar prospectos</h2>' +
-      '<p class="pr-help">Sube un archivo CSV o pega la tabla (desde Google Sheets o Excel). La primera fila deben ser los encabezados. Columnas reconocidas: <code>empresa</code>, <code>rubro</code>, <code>provincia</code>, <code>ciudad</code>, <code>telefono</code>, <code>whatsapp</code>, <code>instagram</code>, <code>correo</code>, <code>web</code>, <code>direccion</code>, <code>fuente</code>, <code>notas</code>. Las empresas que ya están (mismo nombre y ciudad) se saltan.</p>' +
+      '<p class="pr-help">Sube un archivo CSV o pega la tabla (desde Google Sheets o Excel). La primera fila deben ser los encabezados. Columnas reconocidas: <code>empresa</code>, <code>rnc</code>, <code>rubro</code>, <code>provincia</code>, <code>ciudad</code>, <code>telefono</code>, <code>whatsapp</code>, <code>instagram</code>, <code>correo</code>, <code>web</code>, <code>direccion</code>, <code>fuente</code>, <code>notas</code>. Las empresas que ya están (mismo nombre y ciudad) se saltan.</p>' +
       '<div class="pr-form"><label class="wide">Archivo CSV<input type="file" id="prFile" accept=".csv,text/csv,text/plain"></label><label class="wide">…o pega aquí<textarea id="prPaste" rows="8" placeholder="empresa,rubro,provincia,ciudad,telefono,instagram"></textarea></label>' +
       '<div class="pr-actions"><button type="button" class="outline-btn" id="prCancel">Cancelar</button><button type="button" class="primary-btn" id="prRun">Importar</button></div><div class="pr-msg" id="prMsg" role="status"></div></div></section>');
     if (!c) return;
@@ -214,10 +217,13 @@
       const keys = table[0].map((h) => HEADER_MAP[norm(h)] || null);
       if (!keys.includes('company_name')) { msg.textContent = 'Falta la columna "empresa".'; return; }
       const seen = new Set(rows.map((r) => (r.company_name || '').toLowerCase().trim() + '|' + (r.city || '').toLowerCase().trim()));
+      const seenRnc = new Set(rows.map((r) => r.rnc).filter(Boolean));
       const items = []; let skipped = 0;
       table.slice(1).forEach((cells) => {
         const o = {}; keys.forEach((k, i) => { if (k && cells[i] != null && String(cells[i]).trim()) o[k] = String(cells[i]).trim(); });
         if (!o.company_name) return;
+        if (o.rnc) o.rnc = String(o.rnc).replace(/\D/g, '') || null;
+        if (o.rnc && seenRnc.has(o.rnc)) { skipped++; return; } if (o.rnc) seenRnc.add(o.rnc);
         if (o.status) { const s = STATUSES.find(([k, l]) => norm(k) === norm(o.status) || norm(l) === norm(o.status)); o.status = s ? s[0] : 'nuevo'; }
         if (o.estimated_plan) { const p = PLANS.find(([k]) => norm(o.estimated_plan).startsWith(k)); o.estimated_plan = p ? p[0] : null; }
         if (o.next_follow_up && !/^\d{4}-\d{2}-\d{2}$/.test(o.next_follow_up)) delete o.next_follow_up;
@@ -238,7 +244,7 @@
     });
   }
   function exportCsv() {
-    const cols = [['company_name', 'empresa'], ['industry', 'rubro'], ['province', 'provincia'], ['city', 'ciudad'], ['phone', 'telefono'], ['whatsapp', 'whatsapp'], ['instagram', 'instagram'], ['email', 'correo'], ['website', 'web'], ['address', 'direccion'], ['source', 'fuente'], ['status', 'estado'], ['estimated_plan', 'plan'], ['owner_name', 'responsable'], ['next_follow_up', 'seguimiento'], ['notes', 'notas']];
+    const cols = [['company_name', 'empresa'], ['rnc', 'rnc'], ['rnc_status', 'estado_rnc'], ['industry', 'rubro'], ['province', 'provincia'], ['city', 'ciudad'], ['phone', 'telefono'], ['whatsapp', 'whatsapp'], ['instagram', 'instagram'], ['email', 'correo'], ['website', 'web'], ['address', 'direccion'], ['source', 'fuente'], ['status', 'estado'], ['estimated_plan', 'plan'], ['owner_name', 'responsable'], ['next_follow_up', 'seguimiento'], ['notes', 'notas']];
     const cell = (v) => { const s = String(v == null ? '' : v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const csv = '﻿' + [cols.map((c) => c[1]).join(',')].concat(filtered().map((r) => cols.map(([k]) => cell(r[k])).join(','))).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'prospectos-' + today() + '.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);

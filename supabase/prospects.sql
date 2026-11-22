@@ -71,3 +71,8 @@ create policy "Admins delete prospects" on public.prospects
   );
 
 commit;
+
+-- ───────── v2 (nov 2026): RNC obligatorio para clientes corporativos
+alter table public.prospects add column if not exists rnc text;
+alter table public.prospects add column if not exists rnc_status text;
+create unique index if not exists prospects_rnc_uniq on public.prospects (rnc) where rnc is not null;
